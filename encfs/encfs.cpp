@@ -64,8 +64,6 @@ using namespace std::placeholders;
 
 namespace encfs {
 
-#define GET_FN(ctx, finfo) ctx->getNode((void *)(uintptr_t)finfo->fh)
-
 static EncFS_Context *context() {
   return (EncFS_Context *)fuse_get_context()->private_data;
 }
@@ -138,8 +136,10 @@ static int withFileNode(const char *opName, const char *path,
 
     if (fi != nullptr && fi->fh != 0)
       res = do_op(reinterpret_cast<FileNode *>(fi->fh));
-    else
-      res = do_op(FSRoot->lookupNode(path, opName).get());
+    else {
+      std::shared_ptr<FileNode> node = FSRoot->lookupNode(path, opName);
+      res = do_op(node.get());
+    }
 
     if (res < 0) {
       RLOG(DEBUG) << "op: " << opName << " error: " << strerror(-res);
